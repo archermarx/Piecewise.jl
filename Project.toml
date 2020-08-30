@@ -3,6 +3,11 @@ uuid = "da5dcb9c-6581-414c-b5f9-c7d9cf6920b7"
 authors = ["Thomas Marks <thomasarchermarks@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+Intervals = "d8418881-c3e1-53bb-8760-2df7ec849ed5"
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+
 [compat]
 julia = "1"
 

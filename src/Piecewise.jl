@@ -1,5 +1,7 @@
 module Piecewise
+    
+    using MLStyle
 
-# Write your package code here.
+    include("StaticPolynomials.jl")
 
 end
