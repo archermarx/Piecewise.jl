@@ -1,0 +1,13 @@
+name = "Piecewise"
+uuid = "da5dcb9c-6581-414c-b5f9-c7d9cf6920b7"
+authors = ["Thomas Marks <thomasarchermarks@gmail.com> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
