@@ -33,6 +33,7 @@ split_polynomial(p_str) =
 function parse_unnested_poly(p_str)
     arr = zip(split_polynomial(p_str)...) |> collect
     symbols = arr[3]
+    #@show symbols
     if length(symbols) == 1
         var = symbols[1]
         var = isnothing(var) ? :CONSTANT : var
@@ -40,7 +41,8 @@ function parse_unnested_poly(p_str)
         ind = findfirst(!isnothing, symbols)
         var = isnothing(ind) ? :CONSTANT : symbols[ind]
     end
-    @assert (all(x -> isnothing(x) || x == var, symbols)) "Polynomial must be a function of a single variable only"
+    #@show var
+    @assert all(x -> isnothing(x) || x == var, symbols)
     
     return StaticPolynomial(arr[1], arr[2], var)
 end

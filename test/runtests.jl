@@ -25,6 +25,7 @@ using Test
 
     @test p1[2] == 2
     @test p1[4] == 0
+    @test StaticPolynomial(1).var == :CONSTANT
 end
 
 @testset "Conversion and promotion" begin
@@ -67,11 +68,21 @@ end
     @test p"0" == p"0 + 0*x + 0*x^2"
     @test p"1" == p"1 + x - x + x^2 - x^2"
 
-    @test zero(p"1 + 2x") == p"0 + 0*x" 
+    @test zero(p"1 + 2x") == p"0 + 0*x"
+    @test zero(p"2+3r").var == :r 
     @test iszero(zero(p"1 + 2x"))
+
+    @test p"0" !== p"0 + 0*x"
+    @test zero(StaticPolynomial) === p"0"
+    @test zero(StaticPolynomial{Int, 2}) === p"0 + 0*x"
+    @test zero(StaticPolynomial{Int, 2}) !== p"0"
 
     @test one(p"1 + 2x") == p"1 + 0*x"
     @test isone(one(p"1 + 2x"))
+    @test one(StaticPolynomial) === p"1"
+    @test one(StaticPolynomial{Float64}) === p"1.0"
+    @test one(StaticPolynomial{Float64, 2}) == p"1.0 + 0.0x"
+
 
     @test p"x + 1" * p"x + 2" == p"x^2 + 3x + 2"
     @test p"2x^2 - x - 1" * p"x + 1" == p"2x^3 + x^2 - 2x - 1"
@@ -81,12 +92,15 @@ end
 
 @testset "Differentiation and integration" begin
     @test differentiate(p"x + 1") == p"1"
-    @test differentiate(p"3x^2 + 2x + 1") == p"6x + 2"
+    @test differentiate(p"3p^2 + 2p + 1") == p"6p + 2"
     @test differentiate(p"5x^6 + 4x^3") == p"30x^5 + 12x^2" 
+
+    @test length(differentiate(StaticPolynomial(0.0, 0.0, 0.0))) == 2
 
     @test integrate(p"0") == p"0"
     @test integrate(p"0", C = 1) == p"1"
     @test integrate(p"1", C = 1) == p"x + 1"
+    @test integrate(p"9p") == p"4.5p^2"
     @test integrate(p"9x^2 + 3x^5") == p"3x^3 + 0.5x^6"
 
 end
@@ -107,13 +121,34 @@ end
 end
 
 @testset "Combinations of different variables" begin
-    
+    wrongvar_error = ErrorException("Polynomials must be in terms of the same variable.")
+    @test_throws wrongvar_error (p"q + 2q" + p"x + 2x")
+    @test_throws wrongvar_error (p"q + 2q" - p"x + 2x")
+    @test_throws wrongvar_error (p"q + 2q" * p"x + 2x")
 end
 
 end
 
-@testset "Piecewise polynomials" begin
-    
-end
+#@testset "Piecewise polynomials" begin
+polynomials = [
+    StaticPolynomial(0.0, 0.0, 0.0), 
+    p"1.0-x^2",
+    p"x^2 - 1.0",
+    StaticPolynomial(0.0, 0.0, 0.0),
+]
+
+breakpoints = [-1.0, 0.0, 1.0]
+
+mypiecewise = PiecewisePolynomial{3}(polynomials, breakpoints)
+
+differentiated_polys = [zero(StaticPolynomial{Float64, 2}), p"-2.0x", p"2.0x", zero(StaticPolynomial{Float64, 2})]
+integrated_polys = [zero(StaticPolynomial{Float64, 2}), p"x - x^3/3", p"x^3/3 - x", zero(StaticPolynomial{Float64, 2})]
+
+mypiecewise_differentiated = PiecewisePolynomial{3}(differentiated_polys, breakpoints)
+mypiecewise_integrated = PiecewisePolynomial{3}(integrated_polys, breakpoints)
+
+@test mypiecewise_differentiated == differentiate(mypiecewise)
+@test mypiecewise_integrated == integrate(mypiecewise)
+
 
 nothing

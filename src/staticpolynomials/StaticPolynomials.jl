@@ -1,4 +1,4 @@
-export @p_str, StaticPolynomial, differentiate, integrate, degree, coeffs
+export @p_str, StaticPolynomial, differentiate, integrate, degree, coeffs, variable
 
 abstract type AbstractStaticPolynomial{T} <: Function end
 
@@ -10,12 +10,14 @@ struct StaticPolynomial{T<:Number, N} <: AbstractStaticPolynomial{T}
         isempty(coeffs) && return StaticPolynomial{T, 0}()
         N = length(coeffs)
         c = promote(coeffs...) |> NTuple{N, T}
+        var = N > 1 ? var : :CONSTANT
         return new{T, N}(c, var)
     end
     StaticPolynomial{T, N}(coeffs::NTuple{N, T}, var::Symbol) where {T<:Number, N}= new{T, N}(coeffs, var)
 end
 
 coeffs(p::AbstractStaticPolynomial) = p.coeffs
+variable(p::AbstractStaticPolynomial) = p.var
 
 (p::StaticPolynomial)(x) = evalpoly(x, coeffs(p))
 
@@ -88,13 +90,17 @@ promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{StaticPolynomial{S, M}}) whe
 
 # define basic arithmetic operations
 Base.isapprox(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:Number, S<:Number, M, N} = 
-    M == N && all([p1[i] == p2[i] for i in 1:M]) 
+    p1.var == p2.var && M == N && all([p1[i] == p2[i] for i in 1:M]) 
 
-Base.:(==)(p1::StaticPolynomial, p2::StaticPolynomial) = (p1.coeffs == p2.coeffs) || (iszero(p1) && iszero(p2)) || (isone(p1) && isone(p2))
+Base.:(==)(p1::StaticPolynomial, p2::StaticPolynomial) = (p1.coeffs == p2.coeffs && p1.var == p2.var) || (iszero(p1) && iszero(p2)) || (isone(p1) && isone(p2))
 
 function polynomial_arithmetic(operation::Function, p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:Number, S<:Number, M, N}
     R = promote_type(T, S)
-    return (R(operation(p1[i], p2[i])) for i in 1:max(M, N)) |> collect |> StaticPolynomial
+    if p1.var == p2.var || p1.var == :CONSTANT || p2.var == :CONSTANT
+        return (R(operation(p1[i], p2[i])) for i in 1:max(M, N)) |> collect |> StaticPolynomial
+    else
+        error("Polynomials must be in terms of the same variable.")
+    end
 end
 
 Base.:(+)(p1::StaticPolynomial, p2::StaticPolynomial) = polynomial_arithmetic(+, p1, p2)
@@ -116,10 +122,19 @@ function Base.:(^)(p::StaticPolynomial, n::S) where {S<:Integer}
     end
 end
 
-Base.zero(p::StaticPolynomial{T, N}) where {T<:Number, N} = StaticPolynomial(zeros(T, N))
-Base.one(p::StaticPolynomial{T, N}) where {T<:Number, N}= one(T) + zero(p)
+Base.zero(p::StaticPolynomial{T, N}) where {T<:Number, N} = zero(StaticPolynomial{T, N}, p.var)
+Base.zero(::Type{StaticPolynomial{T, N}}, var=:x) where {T, N} = StaticPolynomial(zeros(T, N), var)
+Base.zero(::Type{StaticPolynomial{T}}) where T = zero(StaticPolynomial{T, 1})
+Base.zero(::Type{StaticPolynomial}) = zero(StaticPolynomial{Int})
+
+Base.one(p::StaticPolynomial{T, N}) where {T<:Number, N} = one(StaticPolynomial{T, N}, p.var)
+Base.one(::Type{StaticPolynomial{T, N}}, var=:x) where {T, N} = zero(StaticPolynomial{T, N}, var) + 1
+Base.one(::Type{StaticPolynomial{T}}) where T = one(StaticPolynomial{T, 1})
+Base.one(::Type{StaticPolynomial}) = one(StaticPolynomial{Int})
 
 function Base.:(*)(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:Number, S<:Number, N, M}
+    !(p1.var == p2.var || p1.var == :CONSTANT || p2.var == :CONSTANT) && error("Polynomials must be in terms of the same variable.")
+    
     if M > 1 && N > 1
         degree = M + N - 2
         R = promote_type(T, S)
@@ -149,14 +164,26 @@ Base.iszero(p::StaticPolynomial) = map(iszero, p.coeffs) |> all
 Base.isone(p::StaticPolynomial) = isone(p.coeffs[1]) && map(iszero, p.coeffs[2:end]) |> all
 
 # Differentiation and integration
-differentiate(p::StaticPolynomial) = iszero(p) ? p : (i * p[i + 1] for i in 1:length(p)-1) |> collect |> StaticPolynomial
+function differentiate(p::StaticPolynomial, order = 1) 
+    if order == 0 || (iszero(p) && length(p) <= 1)
+        return p
+    elseif length(p) == 1 && !iszero(p)
+        return zero(p)
+    else
+        coeffs = (i * p[i + 1] for i in 1:length(p)-1) |> collect 
+        var = length(coeffs) <= 1 ? :CONSTANT : p.var
+        p = StaticPolynomial(coeffs, var)
+        return differentiate(p, order - 1)
+    end
+end
 
 function integrate(p::StaticPolynomial; C = 0)
     n = length(p)
     cs = zeros(Float64, n + 1)
     cs[1] = C
     cs[2:end] = [p[i] / i for i in 1:n]
-    return StaticPolynomial(cs)
+    var = p.var == :CONSTANT ? :x : p.var
+    return StaticPolynomial(cs, var)
 end
 
 #StaticPolynomial IO stuff
@@ -234,8 +261,8 @@ end
 
 Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
 
-#function Base.show(io::IO, ::MIME"text/latex",  p::StaticPolynomial{T, N}) where {T, N}
-#    print(io, "\$", polyname(p), "(")
-#    printpoly(p, MIME"text/latex"())
-#    print(io, ")\$")
-#end
+function Base.show(io::IO, ::MIME"text/latex",  p::StaticPolynomial{T, N}) where {T, N}
+    print(io, "\$", polyname(p), "(")
+    printpoly(p, MIME"text/latex"())
+    print(io, ")\$")
+end
