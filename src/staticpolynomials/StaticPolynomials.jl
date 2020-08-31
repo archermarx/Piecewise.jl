@@ -220,13 +220,14 @@ const exponent_dict = Dict{Int, String}(
 poly_coeff_string(coeff) = @match coeff begin
     if isone(coeff) end => ""
     ::Complex => "(" * string(coeff) * ")"
+    ::Rational => "*" * string(coeff)
     _ => string(coeff) 
 end
 
 poly_term_string(coeff, exponent, var, mimetype) = @match exponent begin
     0 => isone(coeff) ? string(coeff) : poly_coeff_string(coeff)
-    1 => poly_coeff_string(coeff) * (coeff isa Rational ? "*" : "") * string(var) 
-    _ => poly_coeff_string(coeff) * (coeff isa Rational ? "*" : "") * string(var) * exponent_string(exponent, mimetype)
+    1 => poly_coeff_string(coeff) * string(var) 
+    _ => poly_coeff_string(coeff) * string(var) * exponent_string(exponent, mimetype)
 end
 
 signstring(n::Number) = signbit(n) ? "-" : "+"
