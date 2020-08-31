@@ -75,7 +75,7 @@ end
     @test promote_rule(StaticPolynomial{Int64, 2}, StaticPolynomial{Float64, 2}) == StaticPolynomial{Float64, 2}
 
     @test promote(p"1 + 0*x", p"3 + 2.0x", p"1//2 + x^3") === (p"1.0 + 0.0x^3", p"3.0 + 2.0x + 0.0x^3", p"0.5 + x^3")
-
+    @test convert(Int, p"0") == 0
 
 end
 
@@ -131,6 +131,7 @@ end
     @test p"(s+1)^2" == p"s^2 + 2s + 1" == p"(s+1)"^2 == p"s+1"^2
 
     @test p"1 + 2x"^0 === p"1 + 0*x"
+    @test p"q" * p"q" == p"q^2"
 
     @test p"x" * p"x + 1" === p"x(x+1)" === p"x + 1" * p"x" === p"x^2 + x"
 end
@@ -179,9 +180,19 @@ end
 
 @testset "Printing" begin
     p_str = "2x + x^2"
+    p = StaticPolynomial(p_str)
     @test Piecewise.printpoly(parse(StaticPolynomial, p_str), MIME"text/latex"()) == "2x + x^{2}"
     @test Piecewise.printpoly(parse(StaticPolynomial, p_str)) == "2x + x²"
     @test Piecewise.printpoly(parse(StaticPolynomial, "x^13")) == "x¹³"
+    @test Piecewise.printpoly(p"0") == "0"
+    @test Piecewise.printpoly(p"0.0") == "0.0"
+    @test Piecewise.printpoly(StaticPolynomial(1 + 3im, 2 + 1im, 5)) == "(1 + 3im) + (2 + 1im)x + (5 + 0im)x²"
+    @test string(p) == Piecewise.printpoly(p)
+
+    @test Piecewise.exponent_string(-10) == "⁻¹⁰"
+
+    @test repr(p) == "StaticPolynomial{Int64,3}(2x + x²)"
+    @test repr("text/latex", p) == "\$2x + x^{2}\$"
 end
 
 end

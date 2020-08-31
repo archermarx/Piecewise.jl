@@ -192,7 +192,7 @@ end
 #StaticPolynomial IO stuff
 function exponent_string(exponent::Integer, mimetype=MIME"text/plain"())
     if exponent < 0 
-        return "-" * exponent_string(-exponent, mimetype)
+        return "⁻" * exponent_string(-exponent, mimetype)
     elseif exponent > 9
         return exponent_string(exponent ÷ 10, mimetype) * exponent_string(exponent % 10, mimetype)
     else
@@ -268,7 +268,7 @@ Base.string(p::StaticPolynomial) = printpoly(p)
 Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
 
 function Base.show(io::IO, ::MIME"text/latex",  p::StaticPolynomial{T, N}) where {T, N}
-    print(io, "\$", polyname(p), "(")
-    printpoly(p, MIME"text/latex"())
-    print(io, ")\$")
+    print(io, "\$")
+    print(io, printpoly(p, MIME"text/latex"()))
+    print(io, "\$")
 end
