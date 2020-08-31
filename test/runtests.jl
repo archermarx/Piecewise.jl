@@ -134,6 +134,7 @@ end
     @test p"q" * p"q" == p"q^2"
 
     @test p"x" * p"x + 1" === p"x(x+1)" === p"x + 1" * p"x" === p"x^2 + x"
+    @test p"x" * p"1" === p"x"
 end
 
 @testset "Differentiation and integration" begin
@@ -192,6 +193,7 @@ end
     @test Piecewise.exponent_string(-10) == "⁻¹⁰"
 
     @test repr(p) == "StaticPolynomial{Int64,3}(2x + x²)"
+    @test repr("text/plain", p) == "StaticPolynomial{Int64,3}(2x + x²)"
     @test repr("text/latex", p) == "\$2x + x^{2}\$"
 end
 

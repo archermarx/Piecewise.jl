@@ -265,7 +265,9 @@ end
 
 Base.string(p::StaticPolynomial) = printpoly(p)
 
-Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
+Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = begin
+    Base.show(io, p)
+end
 
 function Base.show(io::IO, ::MIME"text/latex",  p::StaticPolynomial{T, N}) where {T, N}
     print(io, "\$")
