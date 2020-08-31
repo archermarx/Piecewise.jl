@@ -147,7 +147,7 @@ function Base.:(*)(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where
                 cs[i + j - 1] += p1[i] * p2[j]
             end
         end
-        return StaticPolynomial(cs)
+        return StaticPolynomial(cs, p1.var)
     elseif N > 1
         return p1 * coeffs(p2)[1]
     else
@@ -262,6 +262,8 @@ function printpoly(p::StaticPolynomial{T, N}, mimetype=MIME"text/plain"()) where
     end
     return str
 end
+
+Base.string(p::StaticPolynomial) = printpoly(p)
 
 Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
 

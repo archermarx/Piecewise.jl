@@ -59,9 +59,16 @@ end
 
 function Base.parse(::Type{StaticPolynomial}, p_str)   
     p = tryparse_unnested_poly(p_str)
-    
+
     if isnothing(p)
         tree = Meta.parse(p_str)
+        new_p_str = string(tree)
+        p = tryparse_unnested_poly(new_p_str)
+    else
+        return p
+    end
+    
+    if isnothing(p)
         a1 = tree.args[1]
         for (i, arg) in enumerate(tree.args)
             if arg isa Expr || arg == :x
