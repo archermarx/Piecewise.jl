@@ -1,6 +1,5 @@
 using BenchmarkTools
 using Piecewise
-using BenchmarkTools
 
 function piecewise_hardcoded(x)
     if x < -1
