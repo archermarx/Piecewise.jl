@@ -64,11 +64,19 @@ end
     @test 1 + p"0" |> isone
     @test p"1" * p"x - 2x^2" == p"x - 2x^2"
     @test p"0" * p"x - 2x^2" |> iszero
-    @test p"0" == p"0 + 0x + 0x^2"
+    @test p"0" == p"0 + 0*x + 0*x^2"
     @test p"1" == p"1 + x - x + x^2 - x^2"
+
+    @test zero(p"1 + 2x") == p"0 + 0*x" 
+    @test iszero(zero(p"1 + 2x"))
+
+    @test one(p"1 + 2x") == p"1 + 0*x"
+    @test isone(one(p"1 + 2x"))
 
     @test p"x + 1" * p"x + 2" == p"x^2 + 3x + 2"
     @test p"2x^2 - x - 1" * p"x + 1" == p"2x^3 + x^2 - 2x - 1"
+
+    @test p"(x+1)"^2 == p"x^2 + 2x + 1"
 end
 
 @testset "Differentiation and integration" begin
@@ -81,8 +89,31 @@ end
     @test integrate(p"1", C = 1) == p"x + 1"
     @test integrate(p"9x^2 + 3x^5") == p"3x^3 + 0.5x^6"
 
-    @show p"9x^2 + 3x^5"
+end
+
+@testset "Advanced parsing" begin
+    @test p"(3x + 2)" == p"3x + 2"
+    @test p"(x + 1)(x - 1)" == p"x + 1" * p"x - 1"
+    @test p"(x+1)(x-1)" == p"x^2 - 1"
+    @test p"(3x + 2) + (4x + 3)" == p"3x + 2" + p"4x + 3"
+    @test p"(3x + 2)/4" == p"3x + 2"/4
+    @test p"(x+1)^2" == p"(x+1)"^2
+    @test p"x + (x + (x + (x + (x + (x)))))" == p"6x"
+    
+    @test p"6*x" == p"6x"
+    
+    @test p"x/6" == p"x"/6
 
 end
 
+@testset "Combinations of different variables" begin
+    
 end
+
+end
+
+@testset "Piecewise polynomials" begin
+    
+end
+
+nothing

@@ -1,46 +1,42 @@
-include("common.jl")
-include("polynomialparsing.jl")
-
 export @p_str, StaticPolynomial, differentiate, integrate, degree, coeffs
 
 abstract type AbstractStaticPolynomial{T} <: Function end
 
 struct StaticPolynomial{T<:Number, N} <: AbstractStaticPolynomial{T}
     coeffs::NTuple{N, T}
-    function StaticPolynomial(coeffs::Tuple)
+    var::Symbol
+    function StaticPolynomial(coeffs::Tuple, var::Symbol = :x)
         T = supertype_all(coeffs...)
         isempty(coeffs) && return StaticPolynomial{T, 0}()
         N = length(coeffs)
         c = promote(coeffs...) |> NTuple{N, T}
-        return new{T, N}(c)
+        return new{T, N}(c, var)
     end
-    StaticPolynomial{T, N}(coeffs::NTuple{N, T}) where {T<:Number, N}= new{T, N}(coeffs)
+    StaticPolynomial{T, N}(coeffs::NTuple{N, T}, var::Symbol) where {T<:Number, N}= new{T, N}(coeffs, var)
 end
 
 coeffs(p::AbstractStaticPolynomial) = p.coeffs
 
 (p::StaticPolynomial)(x) = evalpoly(x, coeffs(p))
 
-StaticPolynomial(coeffs::AbstractVector) = StaticPolynomial(Tuple(coeffs))
+StaticPolynomial(coeffs::AbstractVector, var::Symbol = :x) = StaticPolynomial(Tuple(coeffs), var)
 
 # Constructors
-function StaticPolynomial(spcoeffs::AbstractVector{T}, exponents) where T<:Number
+function StaticPolynomial(spcoeffs::AbstractVector{T}, exponents::AbstractVector{<:Integer}, var::Symbol = :x) where T<:Number
     coeffs = zeros(T, maximum(exponents) + 1)
     for (c, e) in zip(spcoeffs, exponents)
         coeffs[e + 1] += c
     end
-    return StaticPolynomial(coeffs)
+    return StaticPolynomial(coeffs, var)
 end
 
-function StaticPolynomial(spcoeffs::Tuple, exponents)
+function StaticPolynomial(spcoeffs::Tuple, exponents::Tuple, var::Symbol = :x)
     coeffs = zeros(supertype_all(spcoeffs...), maximum(exponents) + 1)
     for (c, e) in zip(spcoeffs, exponents)
         coeffs[e + 1] += c
     end
-    return StaticPolynomial(coeffs)
+    return StaticPolynomial(coeffs, var)
 end
-
-StaticPolynomial(p_str::String) = parse(StaticPolynomial, p_str)
 
 StaticPolynomial(coeffs...) = StaticPolynomial(coeffs)
 
@@ -54,7 +50,6 @@ Base.getindex(p::StaticPolynomial{T, N}, inds...) where {T<:Number, N} = try
         zero(T)
     end
     
-
 # Conversion and promotion rules
 convert(::Type{T}, x::StaticPolynomial) where T<:StaticPolynomial = T(x)
 convert(::Type{T}, x::StaticPolynomial) where T<:Number = T(x)
@@ -110,6 +105,20 @@ Base.:(-)(p1::StaticPolynomial, p2::StaticPolynomial) = polynomial_arithmetic(-,
 Base.:(-)(p::StaticPolynomial, n::S) where {S<:Number} = p - StaticPolynomial(n)
 Base.:(-)(n::S, p::StaticPolynomial) where {S<:Number} = StaticPolynomial(n) - p
 
+Base.:(/)(p::StaticPolynomial, n::S) where {S<:Number} = StaticPolynomial(coeffs(p)./n)
+function Base.:(^)(p::StaticPolynomial, n::S) where {S<:Integer}
+    if n == 1
+        return p
+    elseif n == 0 
+        return one(p)
+    else
+        return p * p^(n-1)
+    end
+end
+
+Base.zero(p::StaticPolynomial{T, N}) where {T<:Number, N} = StaticPolynomial(zeros(T, N))
+Base.one(p::StaticPolynomial{T, N}) where {T<:Number, N}= one(T) + zero(p)
+
 function Base.:(*)(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:Number, S<:Number, N, M}
     if M > 1 && N > 1
         degree = M + N - 2
@@ -151,20 +160,32 @@ function integrate(p::StaticPolynomial; C = 0)
 end
 
 #StaticPolynomial IO stuff
-exponent_string(exponent::Integer)  = @match exponent begin
-    0 => "⁰"
-    1 => "¹"
-    2 => "²"
-    3 => "³"
-    4 => "⁴"
-    5 => "⁵" 
-    6 => "⁶"
-    7 => "⁷"
-    8 => "⁸"
-    9 => "⁹"
-    if exponent < 0 end => "⁻" * exponent_string(-exponent)
-    _ => exponent_string(exponent ÷ 10) * exponent_string(exponent % 10)
+function exponent_string(exponent::Integer, mimetype=MIME"text/plain"())
+    if exponent < 0 
+        return "-" * exponent_string(-exponent, mimetype)
+    elseif exponent > 9
+        return exponent_string(exponent ÷ 10, mimetype) * exponent_string(exponent % 10, mimetype)
+    else
+        if mimetype === MIME"text/latex"()
+            return "^{" * string(exponent) * "}"
+        else
+            return exponent_dict[exponent]
+        end
+    end
 end
+
+const exponent_dict = Dict{Int, String}(
+    0 => "⁰",
+    1 => "¹",
+    2 => "²",
+    3 => "³",
+    4 => "⁴",
+    5 => "⁵",
+    6 => "⁶",
+    7 => "⁷",
+    8 => "⁸",
+    9 => "⁹",
+)
 
 poly_coeff_string(coeff) = @match coeff begin
     if isone(coeff) end => ""
@@ -172,44 +193,49 @@ poly_coeff_string(coeff) = @match coeff begin
     _ => string(coeff) 
 end
 
-poly_term_string(coeff, exponent) = @match exponent begin
+poly_term_string(coeff, exponent, var, mimetype) = @match exponent begin
     0 => isone(coeff) ? string(coeff) : poly_coeff_string(coeff)
-    1 => poly_coeff_string(coeff) * "x" 
-    _ => poly_coeff_string(coeff) * "x" * exponent_string(exponent)
+    1 => poly_coeff_string(coeff) * string(var) 
+    _ => poly_coeff_string(coeff) * string(var) * exponent_string(exponent, mimetype)
 end
 
 signstring(n::Number) = signbit(n) ? "-" : "+"
 
 function Base.show(io::IO, p::StaticPolynomial{T, N}) where {T<:Number, N} 
+    print(io, polyname(p), "(")
+    print(io, printpoly(p))
+    print(io, ")")
+end
+
+polyname(p) = string(typeof(p))
+
+function printpoly(p::StaticPolynomial{T, N}, mimetype=MIME"text/plain"()) where {T<:Number, N} 
+    str = ""
     if iszero(p)
-        print(io, "0")
+        str = string(zero(T))
     else
-        str = ""
         if T <: Real
             for (i, c) in enumerate(coeffs(p))
                 if c != 0
-                    str *= isempty(str) ? poly_term_string(c, i - 1) : " " * signstring(c) * " " * poly_term_string(abs(c), i-1)
+                    str *= isempty(str) ? poly_term_string(c, i - 1, p.var, mimetype) : " " * signstring(c) * " " * poly_term_string(abs(c), i-1, p.var, mimetype)
                 end 
             end
         else
             for (i, c) in enumerate(coeffs(p))
                 if c != 0
                     str *= isempty(str) ? "" : " + " 
-                    str *= poly_term_string(c, i - 1)
+                    str *= poly_term_string(c, i - 1, p.var, mimetype)
                 end
             end
         end
-        print(io, str)
     end
+    return str
 end
 
-Base.show(io::IO, ::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
+Base.show(io::IO, mimetype::MIME"text/plain",  p::StaticPolynomial{T, N}) where {T<:Number, N} = Base.show(io, p)
 
-function Base.parse(::Type{StaticPolynomial}, p_str) 
-    arr = zip(split_polynomial(p_str)...) |> collect
-    return StaticPolynomial(arr[1], arr[2])
-end
-
-macro p_str(p)
-    StaticPolynomial(p)
-end
+#function Base.show(io::IO, ::MIME"text/latex",  p::StaticPolynomial{T, N}) where {T, N}
+#    print(io, "\$", polyname(p), "(")
+#    printpoly(p, MIME"text/latex"())
+#    print(io, ")\$")
+#end
