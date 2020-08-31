@@ -1,7 +1,7 @@
 remove_spaces(str) = filter(x -> !isspace(x), str)
 
 function parse_term(tree::Expr)
-    if tree.args[1] in (:(*), :(/)) 
+    if tree.args[1] in (:(*), :(/), :(//)) 
         @views leftovers = tree.args[2:end]
         ind = findfirst(x -> !(x isa Number), leftovers) + 1
         coeff, exponent, var = parse_term(tree.args[ind])

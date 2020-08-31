@@ -142,7 +142,7 @@ breakpoints = [-1.0, 0.0, 1.0]
 mypiecewise = PiecewisePolynomial{3}(polynomials, breakpoints)
 
 differentiated_polys = [zero(StaticPolynomial{Float64, 2}), p"-2.0x", p"2.0x", zero(StaticPolynomial{Float64, 2})]
-integrated_polys = [zero(StaticPolynomial{Float64, 2}), p"x - x^3/3", p"x^3/3 - x", zero(StaticPolynomial{Float64, 2})]
+integrated_polys = [zero(StaticPolynomial{Float64, 4}), p"x - x^3/3", p"x^3/3 - x", zero(StaticPolynomial{Float64, 4})]
 
 mypiecewise_differentiated = PiecewisePolynomial{3}(differentiated_polys, breakpoints)
 mypiecewise_integrated = PiecewisePolynomial{3}(integrated_polys, breakpoints)

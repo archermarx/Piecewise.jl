@@ -30,6 +30,11 @@ println("Hardcoded piecewise polynomial")
 println("Generated piecewise polynomial")
 @btime $mypiecewise(x) setup=(x=4*rand()-2) samples=100_000
 
+myderivative = differentiate(mypiecewise)
+
+println("Generated derivative")
+@btime $myderivative(x) setup=(x=4*rand()-2) samples=100_000
+
 functions = [
     x -> 0.0,
     x -> 1.0 - x^2,

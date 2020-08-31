@@ -4,7 +4,7 @@ module Piecewise
 
     include("common.jl")
     include(joinpath("staticpolynomials","StaticPolynomials.jl"))
-    include(joinpath("staticpolynomials","polynomialparsing.jl"))
+    include(joinpath("staticpolynomials","parsing.jl"))
 
     export PiecewisePolynomial
 

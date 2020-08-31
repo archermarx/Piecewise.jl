@@ -53,12 +53,22 @@ Base.getindex(p::StaticPolynomial{T, N}, inds...) where {T<:Number, N} = try
     end
     
 # Conversion and promotion rules
-convert(::Type{T}, x::StaticPolynomial) where T<:StaticPolynomial = T(x)
-convert(::Type{T}, x::StaticPolynomial) where T<:Number = T(x)
+Base.convert(::Type{T}, x::StaticPolynomial) where T<:StaticPolynomial = T(x)
+Base.convert(::Type{T}, x::StaticPolynomial) where T<:Number = T(x)
 
 StaticPolynomial(p::StaticPolynomial) = p 
 
 StaticPolynomial{T}(p::StaticPolynomial{S}) where {T<:Number, S<:Number} = StaticPolynomial(broadcast(T, p.coeffs))
+
+function StaticPolynomial{T, N}(p::StaticPolynomial{S, M}) where {T<:Number, S<:Number, M, N}
+
+    N < M && error("Cannot convert a polynomial of degree $(M-1) to degree $(N-1)")
+    coeffs = zeros(T, N)
+    for (i, c) in enumerate(p.coeffs)
+        coeffs[i] = c
+    end
+    return StaticPolynomial(coeffs, p.var)
+end
 
 function StaticPolynomial{T, N}(p::StaticPolynomial{T, M}) where {T<:Number, N, M}
     N < M && error("Cannot convert a polynomial of degree $(M-1) to degree $(N-1)")
@@ -66,26 +76,16 @@ function StaticPolynomial{T, N}(p::StaticPolynomial{T, M}) where {T<:Number, N, 
     return p + p1
 end
 
-function StaticPolynomial{T, N}(p::StaticPolynomial{S, M}) where {T<:Number, S<:Number, N, M}
-    
-    N < M && error("Cannot convert a polynomial of degree $(M-1) to degree $(N-1)")
-    R = promote_type(T, S)
-    !(R isa Type{T}) && error("Cannot convert a polynomial of type $(nameof(S)) to type $(nameof(T))")
-    
-    p1 = StaticPolynomial(zeros(R, N))::StaticPolynomial{T, N}
-    return p + p1 
-end
-
 (::Type{T})(p::StaticPolynomial) where {T<:Number} = 
     degree(p) |> iszero ? T(coeffs(p)[1])::T : throw(InexactError(nameof(T), T, p))
 
-promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{S}) where {T<:Number, S<:Number, N} = 
+Base.promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{S}) where {T<:Number, S<:Number, N} = 
     StaticPolynomial{promote_type(T, S), N}
 
-promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{StaticPolynomial{S, N}}) where {T<:Number, S<:Number, N} = 
+Base.promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{StaticPolynomial{S, N}}) where {T<:Number, S<:Number, N} = 
     StaticPolynomial{promote_type(T, S), N}
 
-promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{StaticPolynomial{S, M}}) where {T<:Number, S<:Number, M, N} = 
+Base.promote_rule(::Type{StaticPolynomial{T, N}}, ::Type{StaticPolynomial{S, M}}) where {T<:Number, S<:Number, M, N} = 
     StaticPolynomial{promote_type(T, S), max(N, M)}
 
 # define basic arithmetic operations
@@ -112,6 +112,9 @@ Base.:(-)(p::StaticPolynomial, n::S) where {S<:Number} = p - StaticPolynomial(n)
 Base.:(-)(n::S, p::StaticPolynomial) where {S<:Number} = StaticPolynomial(n) - p
 
 Base.:(/)(p::StaticPolynomial, n::S) where {S<:Number} = StaticPolynomial(coeffs(p)./n)
+
+Base.:(//)(p::StaticPolynomial, n::S) where {S<:Number} = StaticPolynomial(coeffs(p).//n)
+
 function Base.:(^)(p::StaticPolynomial, n::S) where {S<:Integer}
     if n == 1
         return p
@@ -222,8 +225,8 @@ end
 
 poly_term_string(coeff, exponent, var, mimetype) = @match exponent begin
     0 => isone(coeff) ? string(coeff) : poly_coeff_string(coeff)
-    1 => poly_coeff_string(coeff) * string(var) 
-    _ => poly_coeff_string(coeff) * string(var) * exponent_string(exponent, mimetype)
+    1 => poly_coeff_string(coeff) * (coeff isa Rational ? "*" : "") * string(var) 
+    _ => poly_coeff_string(coeff) * (coeff isa Rational ? "*" : "") * string(var) * exponent_string(exponent, mimetype)
 end
 
 signstring(n::Number) = signbit(n) ? "-" : "+"
