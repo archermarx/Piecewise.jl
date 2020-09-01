@@ -34,3 +34,23 @@ function evalpiecewise(::Val{N}, functions, breakpoints, x) where N
     end
 end
 
+function printpiecewise(io::IO, expressions, breakpoints)
+    N = length(breakpoints)
+    conditions = Vector{String}(undef, N + 1)
+    for i in 1:N+1
+        if i == 1
+            conditions[i] = "x < $(breakpoints[1])"
+        elseif i == N+1
+            conditions[i] = "x >= $(breakpoints[N])"
+        else
+            conditions[i] = "$(breakpoints[i-1]) <= x < $(breakpoints[i])" 
+        end
+    end
+    maxl = maximum(length.(conditions))
+    conditions = rpad.(conditions, maxl + 1)
+
+    for (i, e) in enumerate(expressions)
+        println(io, "\t $(conditions[i]):   " * e)
+    end
+end
+

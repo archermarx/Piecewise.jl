@@ -63,11 +63,19 @@ pp3 = Piecewise.@piecewise_polynomial begin
     _ => p"x"
 end
 
-@show promote(pp3.polynomials...)
+@test all(length.(pp3.polynomials) .== 2) && pp3.polynomials isa Vector{StaticPolynomial{Int64, 2}}
 
-@test all(length.(pp3.polynomials) .== 2)
-
+op_macro = Piecewise.@ordered_piecewise begin
+    -1.0 => x -> 0.0
+    0.0 => x -> 1.0 - x^2
+    1.0 => x -> x^2- 1.0 - cos(x^2)
+    _ => x -> 0.0
 end
 
+@test op_macro.expressions == ["x -> 0.0", "x -> 1.0 - x^2", "x -> (x^2 - 1.0) - cos(x^2)", "x -> 0.0"]
+
+# TODO: Write tests for printing
+
+end
 
 nothing

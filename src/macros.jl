@@ -57,8 +57,9 @@ macro ordered_piecewise(block::Expr)
     breakpoints, functions = parse_block(block)
     expr = generate_ordered_piecewise(breakpoints, functions)
     N = length(breakpoints)
+    expr_strings = functions .|> prettify_expr
     quote
-        OrderedPiecewiseFunction{$N}(eval.($(esc(functions))), $(esc(breakpoints)), $(esc(expr)),)
+        OrderedPiecewiseFunction{$N}(eval.($(esc(functions))), $(esc(breakpoints)), $(esc(expr)), $(esc(expr_strings)))
     end
 end
 
@@ -67,8 +68,9 @@ macro ordered_piecewise(functions::Expr, breakpoints::Expr)
     bps = [b for b in bps]
     expr = generate_ordered_piecewise(bps, fs)
     N = length(bps)
+    expr_strings = fs .|> prettify_expr
     quote
-        OrderedPiecewiseFunction{$N}(eval.($(esc(fs))), $(esc(bps)), $(esc(expr)),)
+        OrderedPiecewiseFunction{$N}(eval.($(esc(fs))), $(esc(bps)), $(esc(expr)), $(esc(expr_strings)))
     end
 end
 
@@ -87,4 +89,20 @@ macro piecewise_polynomial(polynomials::Expr, breakpoints::Expr)
     quote
         PiecewisePolynomial{$N}(eval.($(esc(polys))), $(esc(bps)))
     end
+end
+
+function prettify_expr(expr::Expr)
+    args = expr.args[2].args
+    cleaned = []
+    for a in args
+        if !(a isa LineNumberNode)
+            push!(cleaned, a)
+        end 
+    end
+    #@show isa.(args, LineNumberNode)
+    expr.args[2].args = cleaned
+    str = split(string(expr), '\n')[1:end-1] .|> strip |> foldr'(*)# |> remove_spaces
+    str = replace(str, "->begin" => " -> ")
+    str = replace(str, " ^ " => "^")
+    return str
 end

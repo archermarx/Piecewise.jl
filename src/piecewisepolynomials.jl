@@ -9,7 +9,8 @@
             @assert length(breakpoints) == N
             @assert issorted(breakpoints)
             polys = [p for p in promote(polynomials...)]
-            new{N, P, T}(polys, breakpoints)
+            R = supertype_all(polynomials)
+            new{N, R, T}(polys, breakpoints)
         end
     end
     
@@ -22,3 +23,8 @@
         PiecewisePolynomial{N}(integrate.(p.polynomials, C=C), p.breakpoints)
 
     Base.:(==)(p1::PiecewisePolynomial, p2::PiecewisePolynomial) = p1.polynomials == p2.polynomials && p1.breakpoints == p2.breakpoints
+
+    function Base.show(io::IO, p::PiecewisePolynomial)
+        println(io, polyname(p) * ": ")
+        printpiecewise(io, printpoly.(p.polynomials), p.breakpoints)
+    end
