@@ -41,7 +41,31 @@ mypiecewise_integrated = PiecewisePolynomial{3}(integrated_polys, breakpoints)
 
 @test mypiecewise(1.1) == mypiecewise(-1.1) == mypiecewise(-1) == 0 == mypiecewise_funcs(1.1) == mypiecewise_funcs(-1.1) == mypiecewise(-1)
 
+op1 = Piecewise.@ordered_piecewise begin
+    1 => x -> 0
+    _ => x -> 1
+end
 
+op2 = Piecewise.@ordered_piecewise [x -> 0, x -> 1] [1]
+
+pp1 = Piecewise.@piecewise_polynomial begin
+    1 => p"0"
+    _ => p"1"
+end
+
+pp2 = Piecewise.@piecewise_polynomial [p"0", p"1"] [1]
+
+@test op1(1) == pp1(1) == op2(1) == pp2(1) == 1
+@test op1(0.99) == pp1(0.99) == pp2(0.99) == 0
+
+pp3 = Piecewise.@piecewise_polynomial begin
+    1 => p"0"
+    _ => p"x"
+end
+
+@show promote(pp3.polynomials...)
+
+@test all(length.(pp3.polynomials) .== 2)
 
 end
 
