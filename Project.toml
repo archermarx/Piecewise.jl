@@ -3,9 +3,11 @@ uuid = "da5dcb9c-6581-414c-b5f9-c7d9cf6920b7"
 authors = ["Thomas Marks <thomasarchermarks@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+
 [compat]
 julia = "1.1"
-Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
 
 [extras]
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
