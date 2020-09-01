@@ -146,6 +146,9 @@ end
     @test p"x/6" == p"x"/6
 
     @test p"x//6" == p"x"//6
+    
+    @test p"1+3im" == StaticPolynomial(1 + 3im)
+    @test p"1+3im + (2 + 7im)x^2" == StaticPolynomial(1 + 3im, 0, 2 + 7im)
 
     wrongvar_error = ErrorException("Polynomials must be in terms of the same variable.")
     @test_throws wrongvar_error (p"q + 2q" + p"x + 2x")

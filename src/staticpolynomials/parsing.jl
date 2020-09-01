@@ -45,7 +45,7 @@ function parse_unnested_poly(p_str)
     end
     #@show var
     @assert all(x -> isnothing(x) || x == var, symbols)
-    
+    var == :im && error("Cannot parse complex polynomial")
     return StaticPolynomial(arr[1], arr[2], var)
 end
 
@@ -83,7 +83,7 @@ function Base.parse(::Type{StaticPolynomial}, p_str)
             pushfirst!(tree.args, :(*))
         end
 
-        return @eval $tree
+        return StaticPolynomial(@eval $tree)
     else
         return p
     end
