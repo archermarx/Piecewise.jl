@@ -1,12 +1,12 @@
 module Piecewise
 
     using Measurements
-    
+
     include("common.jl")
     include(joinpath("staticpolynomials","StaticPolynomials.jl"))
     include(joinpath("staticpolynomials","parsing.jl"))
 
-    export PiecewisePolynomial
+    export PiecewisePolynomial, OrderedPiecewiseFunction, differentiate, integrate
 
     abstract type AbstractPiecewise{N} <:Function end
 
@@ -60,7 +60,5 @@ module Piecewise
             return functions[ind](x)
         end
     end
-
-    
 
  end
