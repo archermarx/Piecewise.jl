@@ -23,6 +23,8 @@
         PiecewisePolynomial{N}(integrate.(p.polynomials, C=C), p.breakpoints)
 
     Base.:(==)(p1::PiecewisePolynomial, p2::PiecewisePolynomial) = p1.polynomials == p2.polynomials && p1.breakpoints == p2.breakpoints
+    Base.isapprox(p1::PiecewisePolynomial, p2::PiecewisePolynomial) = p1.polynomials ≈ p2.polynomials && p1.breakpoints == p2.breakpoints
+    Base.:(≈)(p1::PiecewisePolynomial, p2::PiecewisePolynomial) = isapprox(p1, p2)
 
     Base.:(*)(p1::PiecewisePolynomial{N}, n::Number) where N = PiecewisePolynomial{N}(p1.polynomials .* n, p1.breakpoints)
     Base.:(*)(n::Number, p1::PiecewisePolynomial{N}) where N = p1 * n

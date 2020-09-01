@@ -1,16 +1,30 @@
 ## TODO: Implement support for complex numbers in @p_str macro
 
+
 remove_spaces(str) = filter(x -> !isspace(x), str)
 
+const operator_lookup = Dict(
+    :* => *,
+    :/ => /,
+    :+ => +,
+    :- => -,
+    :// => //,
+    :^ => ^
+)
+
 function parse_term(tree::Expr)
-    if tree.args[1] in (:(*), :(/), :(//)) 
+    operator = tree.args[1]
+    if operator in (:(*), :(/), :(//)) 
         @views leftovers = tree.args[2:end]
         ind = findfirst(x -> !(x isa Number), leftovers) + 1
         coeff, exponent, var = parse_term(tree.args[ind])
         
         deleteat!(tree.args, ind)
         @assert all(x -> x isa Number, tree.args[2:end])
-        coeff = Piecewise.@eval $tree
+
+        coeff *= tree.args[2]
+        coeff = operator_lookup[operator](1, coeff)
+
     elseif tree.args[1] == :(+)
         return parse_term(tree.args[2])
     elseif tree.args[1] == :(-)
@@ -18,7 +32,7 @@ function parse_term(tree::Expr)
         coeff = -1*coeff
     else
         coeff = 1
-        exponent = Piecewise.@eval $(tree.args[3])::Integer
+        exponent = tree.args[3]
         @assert exponent > 0
         var = tree.args[2]::Symbol
     end
@@ -81,7 +95,17 @@ function Base.parse(::Type{StaticPolynomial}, p_str)
         if tree.args[1] isa StaticPolynomial
             pushfirst!(tree.args, :(*))
         end
-        return StaticPolynomial(Piecewise.@eval $tree)
+        op = tree.args[1]
+        rest = tree.args[2:end]
+
+        for (i, a) in enumerate(rest)
+            if a == :im
+                rest[i] = Complex(false, true)
+            end
+        end
+
+        println("Test")
+        return StaticPolynomial(operator_lookup[op](rest...))
     else
         return p
     end
