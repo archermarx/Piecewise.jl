@@ -1,5 +1,5 @@
 
-    export PiecewisePolynomial, differentiate, integrate
+    export PiecewisePolynomial, differentiate, integrate, @piecewise_polynomial
     
     struct PiecewisePolynomial{N, P<:StaticPolynomial, T<:Real} <: AbstractPiecewise{N}
         polynomials::Vector{P}
@@ -23,6 +23,14 @@
         PiecewisePolynomial{N}(integrate.(p.polynomials, C=C), p.breakpoints)
 
     Base.:(==)(p1::PiecewisePolynomial, p2::PiecewisePolynomial) = p1.polynomials == p2.polynomials && p1.breakpoints == p2.breakpoints
+
+    Base.:(*)(p1::PiecewisePolynomial{N}, n::Number) where N = PiecewisePolynomial{N}(p1.polynomials .* n, p1.breakpoints)
+    Base.:(*)(n::Number, p1::PiecewisePolynomial{N}) where N = p1 * n
+    Base.:(+)(p1::PiecewisePolynomial{N}, n::Number) where N = PiecewisePolynomial{N}(p1.polynomials .+ n, p1.breakpoints)
+    Base.:(+)(n::Number, p1::PiecewisePolynomial{N}) where N = p1 + n
+    Base.:(-)(p1::PiecewisePolynomial{N}, n::Number) where N = PiecewisePolynomial{N}(p1.polynomials .- n, p1.breakpoints)
+    Base.:(-)(n::Number, p1::PiecewisePolynomial{N}) where N = -1 * p1 + n
+    Base.:(-)(p1::PiecewisePolynomial{N}) where N = -1 * p1
 
     function Base.show(io::IO, p::PiecewisePolynomial)
         println(io, polyname(p) * ": ")

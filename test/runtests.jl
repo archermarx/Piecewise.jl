@@ -74,8 +74,20 @@ end
 
 @test op_macro.expressions == ["x -> 0.0", "x -> 1.0 - x^2", "x -> (x^2 - 1.0) - cos(x^2)", "x -> 0.0"]
 
+@test p"6*(2 - q)" == p"12 - 6q"
+@test p"(2 - q) + (3 - q)*3" == p"11 - 4q"
+
+_M6_1 =  @piecewise_polynomial begin
+    0.0 => p"0.0"
+    1.0 => p"(3 - q)^5 - 6*(2 - q)^5 + 15*(1 - q)^5"
+    2.0 => p"(3 - q)^5 - 6*(2 - q)^5"
+    3.0 => p"(3 - q)^5"
+    _ => p"0.0"
+end
+
 # TODO: Write tests for printing
 
 end
+
 
 nothing

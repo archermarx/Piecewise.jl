@@ -10,7 +10,7 @@ function parse_term(tree::Expr)
         
         deleteat!(tree.args, ind)
         @assert all(x -> x isa Number, tree.args[2:end])
-        coeff = @eval $tree
+        coeff = Piecewise.@eval $tree
     elseif tree.args[1] == :(+)
         return parse_term(tree.args[2])
     elseif tree.args[1] == :(-)
@@ -18,7 +18,7 @@ function parse_term(tree::Expr)
         coeff = -1*coeff
     else
         coeff = 1
-        exponent = @eval $(tree.args[3])::Integer
+        exponent = Piecewise.@eval $(tree.args[3])::Integer
         @assert exponent > 0
         var = tree.args[2]::Symbol
     end
@@ -59,7 +59,6 @@ end
 
 function Base.parse(::Type{StaticPolynomial}, p_str)   
     p = tryparse_unnested_poly(p_str)
-
     if isnothing(p)
         tree = Meta.parse(p_str)
         new_p_str = string(tree)
@@ -82,8 +81,7 @@ function Base.parse(::Type{StaticPolynomial}, p_str)
         if tree.args[1] isa StaticPolynomial
             pushfirst!(tree.args, :(*))
         end
-
-        return StaticPolynomial(@eval $tree)
+        return StaticPolynomial(Piecewise.@eval $tree)
     else
         return p
     end

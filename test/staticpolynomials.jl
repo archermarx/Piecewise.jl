@@ -84,7 +84,7 @@ end
     @test p"1" == p"1 + x - x + x^2 - x^2"
 
     @test zero(p"1 + 2x") == p"0 + 0*x"
-    @test zero(p"2+3r").var == :r 
+    @test zero(p"2+3r").var == :CONSTANT && zero(p"2+3r") |> Piecewise.isconstant
     @test iszero(zero(p"1 + 2x"))
 
     @test p"0" !== p"0 + 0*x"

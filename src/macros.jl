@@ -58,8 +58,9 @@ macro ordered_piecewise(block::Expr)
     expr = generate_ordered_piecewise(breakpoints, functions)
     N = length(breakpoints)
     expr_strings = functions .|> prettify_expr
+    functions = eval.(functions)
     quote
-        OrderedPiecewiseFunction{$N}(eval.($(esc(functions))), $(esc(breakpoints)), $(esc(expr)), $(esc(expr_strings)))
+        OrderedPiecewiseFunction{$N}($(esc(functions)), $(esc(breakpoints)), $(esc(expr)), $(esc(expr_strings)))
     end
 end
 
@@ -69,16 +70,18 @@ macro ordered_piecewise(functions::Expr, breakpoints::Expr)
     expr = generate_ordered_piecewise(bps, fs)
     N = length(bps)
     expr_strings = fs .|> prettify_expr
+    functions = eval.(fs)
     quote
-        OrderedPiecewiseFunction{$N}(eval.($(esc(fs))), $(esc(bps)), $(esc(expr)), $(esc(expr_strings)))
+        OrderedPiecewiseFunction{$N}(($(esc(functions))), $(esc(bps)), $(esc(expr)), $(esc(expr_strings)))
     end
 end
 
 macro piecewise_polynomial(block::Expr)
     breakpoints, polynomials = parse_block(block)
     N = length(breakpoints)
+    polys = eval.(polynomials)
     quote
-        PiecewisePolynomial{$N}(eval.($(esc(polynomials))), $(esc(breakpoints)))
+        PiecewisePolynomial{$N}($(esc(polys)), $(esc(breakpoints)))
     end
 end
 
@@ -86,8 +89,9 @@ macro piecewise_polynomial(polynomials::Expr, breakpoints::Expr)
     polys, bps = polynomials.args, breakpoints.args
     bps = [b for b in bps]
     N = length(bps)
+    polys = eval.(polys)
     quote
-        PiecewisePolynomial{$N}(eval.($(esc(polys))), $(esc(bps)))
+        PiecewisePolynomial{$N}($(esc(polys)), $(esc(bps)))
     end
 end
 

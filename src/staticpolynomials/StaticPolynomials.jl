@@ -1,4 +1,4 @@
-export @p_str, StaticPolynomial, differentiate, integrate, degree, coeffs, variable
+export @p_str, StaticPolynomial, differentiate, integrate, degree, coeffs, variable, isconstant
 
 abstract type AbstractStaticPolynomial{T} <: Function end
 
@@ -11,6 +11,7 @@ struct StaticPolynomial{T<:Number, N} <: AbstractStaticPolynomial{T}
         N = length(coeffs)
         c = promote(coeffs...) |> NTuple{N, T}
         var = N > 1 ? var : :CONSTANT
+        var = isconstant(coeffs) ? :CONSTANT : var
         return new{T, N}(c, var)
     end
     StaticPolynomial{T, N}(coeffs::NTuple{N, T}, var::Symbol) where {T<:Number, N}= new{T, N}(coeffs, var)
@@ -94,10 +95,20 @@ Base.isapprox(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:
 
 Base.:(==)(p1::StaticPolynomial, p2::StaticPolynomial) = (p1.coeffs == p2.coeffs && p1.var == p2.var) || (iszero(p1) && iszero(p2)) || (isone(p1) && isone(p2))
 
+isconstant(p::StaticPolynomial) = isconstant(p.coeffs) && p.var == :CONSTANT
+isconstant(coeffs) = all(iszero.(coeffs[2:end]))
+
 function polynomial_arithmetic(operation::Function, p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where {T<:Number, S<:Number, M, N}
     R = promote_type(T, S)
-    if p1.var == p2.var || p1.var == :CONSTANT || p2.var == :CONSTANT
-        return (R(operation(p1[i], p2[i])) for i in 1:max(M, N)) |> collect |> StaticPolynomial
+    #@show p1
+    #@show p2
+    if p1.var == p2.var || isconstant(p1) || isconstant(p2)
+        coeffs = (R(operation(p1[i], p2[i])) for i in 1:max(M, N)) |> collect
+        if isconstant(p1)
+            return StaticPolynomial(coeffs, p2.var)
+        else
+            return StaticPolynomial(coeffs, p1.var)
+        end
     else
         error("Polynomials must be in terms of the same variable.")
     end
@@ -126,7 +137,7 @@ function Base.:(^)(p::StaticPolynomial, n::S) where {S<:Integer}
 end
 
 Base.zero(p::StaticPolynomial{T, N}) where {T<:Number, N} = zero(StaticPolynomial{T, N}, p.var)
-Base.zero(::Type{StaticPolynomial{T, N}}, var=:x) where {T, N} = StaticPolynomial(zeros(T, N), var)
+Base.zero(::Type{StaticPolynomial{T, N}}, var=:x) where {T, N} = StaticPolynomial(zeros(T, N), :CONSTANT)
 Base.zero(::Type{StaticPolynomial{T}}) where T = zero(StaticPolynomial{T, 1})
 Base.zero(::Type{StaticPolynomial}) = zero(StaticPolynomial{Int})
 
@@ -162,7 +173,7 @@ function Base.:(*)(p::StaticPolynomial{T}, n::S) where {T<:Number, S<:Number}
         R = promote_type(T, S)
         return StaticPolynomial{R}(p)
     else
-        return StaticPolynomial(n .* p.coeffs)
+        return StaticPolynomial(n .* p.coeffs, p.var)
     end
 end
 
