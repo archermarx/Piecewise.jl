@@ -155,10 +155,15 @@ function Base.:(*)(p1::StaticPolynomial{T, N}, p2::StaticPolynomial{S, M}) where
     end
 end
 
-Base.:(*)(p::StaticPolynomial, n::S) where {S<:Number} = @match n begin
-    if iszero(n) end => StaticPolynomial(n)
-    if isone(n) end => p
-    _ => StaticPolynomial(n .* p.coeffs)
+function Base.:(*)(p::StaticPolynomial{T}, n::S) where {T<:Number, S<:Number}
+    if iszero(n) 
+        return StaticPolynomial(n)
+    elseif isone(n)
+        R = promote_type(T, S)
+        return StaticPolynomial{R}(p)
+    else
+        return StaticPolynomial(n .* p.coeffs)
+    end
 end
 
 Base.:(*)(n::S, p::StaticPolynomial) where {S<:Number} = p * n
@@ -180,11 +185,20 @@ function differentiate(p::StaticPolynomial, order = 1)
     end
 end
 
-function integrate(p::StaticPolynomial; C = 0)
+function integrate(p::StaticPolynomial{T}; C = 0) where T<:AbstractFloat
     n = length(p)
-    cs = zeros(Float64, n + 1)
+    cs = zeros(T, n + 1)
     cs[1] = C
     cs[2:end] = [p[i] / i for i in 1:n]
+    var = p.var == :CONSTANT ? :x : p.var
+    return StaticPolynomial(cs, var)
+end
+
+function integrate(p::StaticPolynomial; C = 0)
+    n = length(p)
+    cs = zeros(Rational, n + 1)
+    cs[1] = C
+    cs[2:end] = [p[i] // i for i in 1:n]
     var = p.var == :CONSTANT ? :x : p.var
     return StaticPolynomial(cs, var)
 end
@@ -217,17 +231,21 @@ const exponent_dict = Dict{Int, String}(
     9 => "⁹",
 )
 
-poly_coeff_string(coeff) = @match coeff begin
-    if isone(coeff) end => ""
-    ::Complex => "(" * string(coeff) * ")"
-    ::Rational => "*" * string(coeff)
-    _ => string(coeff) 
-end
+poly_coeff_string(coeff, exponent) = isone(coeff) ? "" : (exponent == 0 ? string(coeff) : _poly_coeff_string(coeff))
 
-poly_term_string(coeff, exponent, var, mimetype) = @match exponent begin
-    0 => isone(coeff) ? string(coeff) : poly_coeff_string(coeff)
-    1 => poly_coeff_string(coeff) * string(var) 
-    _ => poly_coeff_string(coeff) * string(var) * exponent_string(exponent, mimetype)
+_poly_coeff_string(coeff::(BigFloat | Float16 | Float32 | Float64 | Integer)) = string(coeff)
+_poly_coeff_string(coeff) = string(coeff) |> wrap_string
+
+wrap_string(str; left='(', right=')') = left * str * right
+
+function poly_term_string(coeff, exponent, var, mimetype)
+    if iszero(exponent)
+        return isone(coeff) ? string(coeff) : poly_coeff_string(coeff, exponent)
+    elseif isone(exponent)
+        return poly_coeff_string(coeff, exponent) * string(var)
+    else
+        return poly_coeff_string(coeff, exponent) * string(var) * exponent_string(exponent, mimetype)
+    end
 end
 
 signstring(n::Number) = signbit(n) ? "-" : "+"
