@@ -103,8 +103,6 @@ function Base.parse(::Type{StaticPolynomial}, p_str)
                 rest[i] = Complex(false, true)
             end
         end
-
-        println("Test")
         return StaticPolynomial(operator_lookup[op](rest...))
     else
         return p

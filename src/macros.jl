@@ -1,5 +1,6 @@
 export @ordered_piecewise
 
+
 function generate_ordered_piecewise(bps, funcs)
     ndiv = length(bps)
     str = "x -> begin\n"
@@ -70,7 +71,9 @@ macro ordered_piecewise(functions::Expr, breakpoints::Expr)
     expr = generate_ordered_piecewise(bps, fs)
     N = length(bps)
     expr_strings = fs .|> prettify_expr
+    
     functions = eval.(fs)
+    
     quote
         OrderedPiecewiseFunction{$N}(($(esc(functions))), $(esc(bps)), $(esc(expr)), $(esc(expr_strings)))
     end
@@ -79,7 +82,8 @@ end
 macro piecewise_polynomial(block::Expr)
     breakpoints, polynomials = parse_block(block)
     N = length(breakpoints)
-    polys = eval.(polynomials)
+    polys = [StaticPolynomial(p.args[3]) for p in polynomials]
+    
     quote
         PiecewisePolynomial{$N}($(esc(polys)), $(esc(breakpoints)))
     end
@@ -89,7 +93,7 @@ macro piecewise_polynomial(polynomials::Expr, breakpoints::Expr)
     polys, bps = polynomials.args, breakpoints.args
     bps = [b for b in bps]
     N = length(bps)
-    polys = eval.(polys)
+    polys = [StaticPolynomial(p.args[3]) for p in polys]
     quote
         PiecewisePolynomial{$N}($(esc(polys)), $(esc(bps)))
     end
